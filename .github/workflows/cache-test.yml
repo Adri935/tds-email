@@ -13,12 +13,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # --- Setup Node.js Environment ---
+      # This is necessary for 'npm install' to work.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # --- Dependency Installation (CRITICAL for priming the cache) ---
+      # This step populates the ~/.npm directory with dependencies.
+      - name: Install dependencies
+        run: npm install
+
+      # --- Cache Step ---
       - name: Cache dependencies
         id: cache
         uses: actions/cache@v4
         with:
           path: ~/.npm
           key: cache-a871ed2
-
+          
+      # --- Cache Echo Step ---
       - name: prime-cache-a871ed2
         run: echo "Cache result: ${{ steps.cache.outputs.cache-hit }}"
+        shell: bash
