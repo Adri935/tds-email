@@ -1,39 +1,46 @@
-name: Cache Test
+name: CI with Cache Demo
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      # --- Setup Node.js Environment ---
-      # This is necessary for 'npm install' to work.
-      - name: Setup Node.js
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-
-      # --- Dependency Installation (CRITICAL for priming the cache) ---
-      # This step populates the ~/.npm directory with dependencies.
-      - name: Install dependencies
-        run: npm install
-
-      # --- Cache Step ---
+          node-version: '18'
+          
       - name: Cache dependencies
-        id: cache
+        id: cache-deps
         uses: actions/cache@v4
         with:
-          path: ~/.npm
+          path: |
+            ~/.npm
+            node_modules
           key: cache-a871ed2
-          
-      # --- Cache Echo Step ---
+          restore-keys: |
+            cache-a871ed2
+            
       - name: prime-cache-a871ed2
-        run: echo "Cache result: ${{ steps.cache.outputs.cache-hit }}"
-        shell: bash
+        run: |
+          if [ "${{ steps.cache-deps.outputs.cache-hit }}" == "true" ]; then
+            echo "Cache hit - using cached dependencies"
+          else
+            echo "Cache miss - installing dependencies"
+          fi
+          
+      - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: npm install
+        
+      - name: Run tests
+        run: echo "Running tests..."
